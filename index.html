@@ -130,7 +130,7 @@
       <input type="date" id="in-dldate">
     </div>
     <button class="btn" onclick="saveSetup()">開始計時</button>
-    <p class="savehint">設定會存在網址中。在 Safari 按「分享 → 加入主畫面」,即可像 App 一樣使用並保留設定。</p>
+    <p class="savehint">設定只需輸入一次,會儲存在你的手機裡。在 Safari 按「分享 → 加入主畫面」,即可像 App 一樣使用。</p>
   </div>
 
   <!-- ======== MAIN ======== -->
@@ -179,7 +179,22 @@
     {name:"晚年", en:"Late life", from:60, to:999}
   ];
 
-  /* ---------- persistence via URL hash ---------- */
+  /* ---------- persistence: localStorage first, URL hash as fallback ---------- */
+  const LS_KEY = "mortality-settings";
+  function persist(){
+    const data = encodeState();
+    try{ localStorage.setItem(LS_KEY, data); }catch(e){}
+    try{ history.replaceState(null,"",data); }catch(e){}
+  }
+  function restore(){
+    // 1) localStorage (survives app close / reboot)
+    try{
+      const saved = localStorage.getItem(LS_KEY);
+      if(saved && decodeFrom(saved)) return true;
+    }catch(e){}
+    // 2) URL hash (fallback, e.g. shared link)
+    return decodeFrom(location.hash);
+  }
   function encodeState(){
     const p = new URLSearchParams();
     p.set("b", state.birth.toISOString());
@@ -187,9 +202,9 @@
     if(state.dlDate){ p.set("dn", state.dlName||"期限"); p.set("dd", state.dlDate.toISOString().slice(0,10)); }
     return "#"+p.toString();
   }
-  function decodeState(){
+  function decodeFrom(str){
     try{
-      const h = location.hash.replace(/^#/,"");
+      const h = String(str||"").replace(/^#/,"");
       if(!h) return false;
       const p = new URLSearchParams(h);
       if(!p.get("b")) return false;
@@ -197,6 +212,7 @@
       if(isNaN(b)) return false;
       state.birth = b;
       state.exp = Math.min(110, Math.max(50, parseInt(p.get("e"))||79));
+      state.dlDate = null; state.dlName = "";
       if(p.get("dd")){ state.dlDate = new Date(p.get("dd")+"T23:59:59"); state.dlName = p.get("dn")||"期限"; }
       return true;
     }catch(e){ return false; }
@@ -212,7 +228,7 @@
     const dld = $("in-dldate").value;
     state.dlDate = dld ? new Date(dld+"T23:59:59") : null;
     state.dlName = $("in-dlname").value.trim();
-    history.replaceState(null,"",encodeState());
+    persist();
     showMain();
   };
   window.openSettings = function(){
@@ -334,7 +350,7 @@
     cancelAnimationFrame(rafId);
     tick();
   }
-  if(decodeState()) showMain();
+  if(restore()) showMain();
   else $("setup").classList.remove("hidden");
 })();
 </script>
