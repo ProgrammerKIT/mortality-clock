@@ -43,7 +43,7 @@
   .gear{background:none;border:none;color:var(--dim);font-family:var(--sans);font-size:13px;letter-spacing:.2em;cursor:pointer;padding:6px 0}
   .gear:active{color:var(--gold)}
 
-  .motto{font-family:var(--serif);font-style:italic;color:var(--faint);font-size:14px;letter-spacing:.06em;margin-bottom:26px}
+  .motto{font-family:var(--serif);font-style:italic;color:var(--faint);font-size:14px;letter-spacing:.06em;margin-bottom:46px}
 
   /* ---------- tabs ---------- */
   .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:30px}
@@ -54,13 +54,13 @@
   /* ---------- big number ---------- */
   .stage{text-align:center;margin-bottom:34px;min-height:150px}
   .stage-label{font-size:12px;letter-spacing:.45em;color:var(--dim);margin-bottom:14px;text-indent:.45em}
-  .big{font-family:var(--mono);font-weight:300;font-size:clamp(40px,11.5vw,58px);line-height:1.05;color:var(--bone);font-variant-numeric:tabular-nums}
-  .big.compact{font-size:clamp(26px,7.4vw,40px)}
+  .big{font-family:var(--mono);font-weight:400;font-size:clamp(40px,11.5vw,58px);line-height:1.05;color:var(--bone);font-variant-numeric:tabular-nums}
+  .big.compact{font-size:clamp(32px,9.6vw,52px);letter-spacing:-.01em}
   .big .frac{color:var(--gold);font-size:.52em;vertical-align:baseline}
   .unit{font-family:var(--serif);font-style:italic;font-size:17px;color:var(--dim);margin-top:10px;letter-spacing:.08em}
   .subrow{display:flex;justify-content:center;gap:26px;margin-top:20px}
   .sub{text-align:center}
-  .sub b{display:block;font-family:var(--mono);font-weight:400;font-size:17px;color:var(--bone);font-variant-numeric:tabular-nums}
+  .sub b{display:block;font-family:var(--mono);font-weight:400;font-size:20px;color:var(--bone);font-variant-numeric:tabular-nums}
   .sub span{font-size:11px;letter-spacing:.28em;color:var(--dim)}
 
   /* ---------- life grid ---------- */
@@ -141,12 +141,6 @@
     </header>
     <div class="motto">Get busy living, or get busy dying.</div>
 
-    <div class="tabs">
-      <button class="tab on" id="tab-age" onclick="setMode('age')">年齡</button>
-      <button class="tab" id="tab-death" onclick="setMode('death')">倒數</button>
-      <button class="tab" id="tab-dl" onclick="setMode('dl')">期限</button>
-    </div>
-
     <div class="stage">
       <div class="stage-label" id="stage-label">你的精確年齡</div>
       <div class="big" id="big-num">—</div>
@@ -168,7 +162,7 @@
 (function(){
   const $ = id => document.getElementById(id);
   let state = { birth:null, exp:79, dlName:"", dlDate:null };
-  let mode = "age";
+  let mode = "death";
   let rafId = null;
 
   const CHAPTERS = [
@@ -241,13 +235,6 @@
     $("main").classList.add("hidden");
     $("setup").classList.remove("hidden");
     cancelAnimationFrame(rafId);
-  };
-
-  /* ---------- tabs ---------- */
-  window.setMode = function(m){
-    if(m==="dl" && !state.dlDate){ openSettings(); $("in-dlname").focus(); return; }
-    mode = m;
-    ["age","death","dl"].forEach(k=>$("tab-"+k).classList.toggle("on", k===m));
   };
 
   /* ---------- life grid ---------- */
