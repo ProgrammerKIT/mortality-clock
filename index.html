@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0c">
+<title>Mortality · 死亡時鐘</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@300;400&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0c;
+    --surface:#131318;
+    --line:#232329;
+    --bone:#e9e3d3;
+    --dim:#77725f;
+    --faint:#3a3a42;
+    --gold:#d4a94e;
+    --ember:#8c5a2b;
+    --serif:"Cormorant Garamond", "Songti TC", serif;
+    --mono:"IBM Plex Mono", ui-monospace, monospace;
+    --sans:"Noto Sans TC", -apple-system, sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--bone);
+    font-family:var(--sans);
+    font-weight:300;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:560px;margin:0 auto;padding:28px 20px 40px;min-height:100vh;display:flex;flex-direction:column}
+
+  /* ---------- header ---------- */
+  header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .brand{font-family:var(--serif);font-size:22px;letter-spacing:.14em;font-style:italic;color:var(--dim)}
+  .gear{background:none;border:none;color:var(--dim);font-family:var(--sans);font-size:13px;letter-spacing:.2em;cursor:pointer;padding:6px 0}
+  .gear:active{color:var(--gold)}
+
+  .motto{font-family:var(--serif);font-style:italic;color:var(--faint);font-size:14px;letter-spacing:.06em;margin-bottom:26px}
+
+  /* ---------- tabs ---------- */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:30px}
+  .tab{flex:1;background:none;border:none;color:var(--dim);font-family:var(--sans);font-size:14px;letter-spacing:.25em;padding:12px 0 14px;cursor:pointer;position:relative;font-weight:400}
+  .tab.on{color:var(--bone)}
+  .tab.on::after{content:"";position:absolute;left:20%;right:20%;bottom:-1px;height:1px;background:var(--gold)}
+
+  /* ---------- big number ---------- */
+  .stage{text-align:center;margin-bottom:34px;min-height:150px}
+  .stage-label{font-size:12px;letter-spacing:.45em;color:var(--dim);margin-bottom:14px;text-indent:.45em}
+  .big{font-family:var(--mono);font-weight:300;font-size:clamp(40px,11.5vw,58px);line-height:1.05;color:var(--bone);font-variant-numeric:tabular-nums}
+  .big.compact{font-size:clamp(26px,7.4vw,40px)}
+  .big .frac{color:var(--gold);font-size:.52em;vertical-align:baseline}
+  .unit{font-family:var(--serif);font-style:italic;font-size:17px;color:var(--dim);margin-top:10px;letter-spacing:.08em}
+  .subrow{display:flex;justify-content:center;gap:26px;margin-top:20px}
+  .sub{text-align:center}
+  .sub b{display:block;font-family:var(--mono);font-weight:400;font-size:17px;color:var(--bone);font-variant-numeric:tabular-nums}
+  .sub span{font-size:11px;letter-spacing:.28em;color:var(--dim)}
+
+  /* ---------- life grid ---------- */
+  .grid-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+  .grid-title{font-size:12px;letter-spacing:.4em;color:var(--dim)}
+  .grid-pct{font-family:var(--mono);font-size:13px;color:var(--gold)}
+  .chapter{margin-top:16px}
+  .chapter-name{font-family:var(--serif);font-style:italic;font-size:14px;color:var(--dim);margin-bottom:8px;display:flex;justify-content:space-between}
+  .chapter-name em{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--faint)}
+  .dots{display:grid;grid-template-columns:repeat(24,1fr);gap:5px}
+  .dot{width:100%;aspect-ratio:1;border-radius:50%;background:transparent;border:1px solid var(--faint);transition:background .3s}
+  .dot.lived{background:var(--ember);border-color:var(--ember)}
+  .dot.recent{background:var(--gold);border-color:var(--gold)}
+  .dot.now{background:var(--gold);border-color:var(--gold);animation:breathe 2.6s ease-in-out infinite}
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:.25}}
+  @media (prefers-reduced-motion:reduce){.dot.now{animation:none}}
+
+  footer{margin-top:44px;text-align:center;font-family:var(--serif);font-style:italic;color:var(--faint);font-size:14px;letter-spacing:.05em}
+
+  /* ---------- setup / settings ---------- */
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 22px;margin:auto 0}
+  .panel h2{font-family:var(--serif);font-weight:400;font-size:26px;letter-spacing:.05em;margin-bottom:4px}
+  .panel p.hint{color:var(--dim);font-size:13px;line-height:1.7;margin-bottom:22px}
+  .field{margin-bottom:20px}
+  .field label{display:block;font-size:12px;letter-spacing:.3em;color:var(--dim);margin-bottom:8px}
+  .field input[type=date],.field input[type=time],.field input[type=text]{
+    width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;
+    color:var(--bone);font-family:var(--mono);font-size:16px;padding:12px 14px;outline:none;
+    -webkit-appearance:none;appearance:none;
+  }
+  .field input:focus{border-color:var(--gold)}
+  .range-row{display:flex;align-items:center;gap:14px}
+  input[type=range]{flex:1;accent-color:var(--gold)}
+  .range-val{font-family:var(--mono);font-size:18px;color:var(--gold);width:52px;text-align:right}
+  .btn{width:100%;background:var(--gold);color:#0a0a0c;border:none;border-radius:8px;font-family:var(--sans);font-weight:500;font-size:15px;letter-spacing:.3em;text-indent:.3em;padding:15px 0;margin-top:6px;cursor:pointer}
+  .btn:active{opacity:.85}
+  .btn.ghost{background:none;border:1px solid var(--line);color:var(--dim);margin-top:12px;letter-spacing:.2em}
+  .savehint{margin-top:16px;font-size:12px;color:var(--faint);line-height:1.8}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ======== SETUP ======== -->
+  <div id="setup" class="panel hidden">
+    <h2>Memento&nbsp;mori</h2>
+    <p class="hint">記住你終將一死——這是一個提醒你把時間用在重要事情上的時鐘。輸入生日開始。</p>
+    <div class="field">
+      <label>出生日期</label>
+      <input type="date" id="in-birth" max="2026-07-10">
+    </div>
+    <div class="field">
+      <label>出生時間(可略)</label>
+      <input type="time" id="in-time" value="08:00">
+    </div>
+    <div class="field">
+      <label>預期壽命</label>
+      <div class="range-row">
+        <input type="range" id="in-exp" min="50" max="110" value="79" oninput="document.getElementById('exp-val').textContent=this.value">
+        <div class="range-val"><span id="exp-val">79</span></div>
+      </div>
+    </div>
+    <div class="field">
+      <label>自訂期限(可略)· 名稱與日期</label>
+      <input type="text" id="in-dlname" placeholder="例:大樹 H1 報告" style="margin-bottom:8px">
+      <input type="date" id="in-dldate">
+    </div>
+    <button class="btn" onclick="saveSetup()">開始計時</button>
+    <p class="savehint">設定會存在網址中。在 Safari 按「分享 → 加入主畫面」,即可像 App 一樣使用並保留設定。</p>
+  </div>
+
+  <!-- ======== MAIN ======== -->
+  <div id="main" class="hidden" style="display:flex;flex-direction:column;flex:1">
+    <header>
+      <div class="brand">Mortality</div>
+      <button class="gear" onclick="openSettings()">設定</button>
+    </header>
+    <div class="motto">Get busy living, or get busy dying.</div>
+
+    <div class="tabs">
+      <button class="tab on" id="tab-age" onclick="setMode('age')">年齡</button>
+      <button class="tab" id="tab-death" onclick="setMode('death')">倒數</button>
+      <button class="tab" id="tab-dl" onclick="setMode('dl')">期限</button>
+    </div>
+
+    <div class="stage">
+      <div class="stage-label" id="stage-label">你的精確年齡</div>
+      <div class="big" id="big-num">—</div>
+      <div class="unit" id="big-unit">years</div>
+      <div class="subrow" id="subrow"></div>
+    </div>
+
+    <div class="grid-head">
+      <div class="grid-title">一生 · 以月為格</div>
+      <div class="grid-pct" id="grid-pct"></div>
+    </div>
+    <div id="grid"></div>
+
+    <footer>You can never go back.</footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  let state = { birth:null, exp:79, dlName:"", dlDate:null };
+  let mode = "age";
+  let rafId = null;
+
+  const CHAPTERS = [
+    {name:"童年", en:"Childhood", from:0,  to:13},
+    {name:"少年", en:"Youth",     from:13, to:20},
+    {name:"成年", en:"Adulthood", from:20, to:40},
+    {name:"中年", en:"Midlife",   from:40, to:60},
+    {name:"晚年", en:"Late life", from:60, to:999}
+  ];
+
+  /* ---------- persistence via URL hash ---------- */
+  function encodeState(){
+    const p = new URLSearchParams();
+    p.set("b", state.birth.toISOString());
+    p.set("e", state.exp);
+    if(state.dlDate){ p.set("dn", state.dlName||"期限"); p.set("dd", state.dlDate.toISOString().slice(0,10)); }
+    return "#"+p.toString();
+  }
+  function decodeState(){
+    try{
+      const h = location.hash.replace(/^#/,"");
+      if(!h) return false;
+      const p = new URLSearchParams(h);
+      if(!p.get("b")) return false;
+      const b = new Date(p.get("b"));
+      if(isNaN(b)) return false;
+      state.birth = b;
+      state.exp = Math.min(110, Math.max(50, parseInt(p.get("e"))||79));
+      if(p.get("dd")){ state.dlDate = new Date(p.get("dd")+"T23:59:59"); state.dlName = p.get("dn")||"期限"; }
+      return true;
+    }catch(e){ return false; }
+  }
+
+  /* ---------- setup ---------- */
+  window.saveSetup = function(){
+    const d = $("in-birth").value;
+    if(!d){ $("in-birth").focus(); return; }
+    const t = $("in-time").value || "08:00";
+    state.birth = new Date(d+"T"+t+":00");
+    state.exp = parseInt($("in-exp").value)||79;
+    const dld = $("in-dldate").value;
+    state.dlDate = dld ? new Date(dld+"T23:59:59") : null;
+    state.dlName = $("in-dlname").value.trim();
+    history.replaceState(null,"",encodeState());
+    showMain();
+  };
+  window.openSettings = function(){
+    if(state.birth){
+      $("in-birth").value = state.birth.toISOString().slice(0,10);
+      $("in-time").value = String(state.birth.getHours()).padStart(2,"0")+":"+String(state.birth.getMinutes()).padStart(2,"0");
+      $("in-exp").value = state.exp; $("exp-val").textContent = state.exp;
+      if(state.dlDate){ $("in-dldate").value = state.dlDate.toISOString().slice(0,10); $("in-dlname").value = state.dlName; }
+    }
+    $("main").classList.add("hidden");
+    $("setup").classList.remove("hidden");
+    cancelAnimationFrame(rafId);
+  };
+
+  /* ---------- tabs ---------- */
+  window.setMode = function(m){
+    if(m==="dl" && !state.dlDate){ openSettings(); $("in-dlname").focus(); return; }
+    mode = m;
+    ["age","death","dl"].forEach(k=>$("tab-"+k).classList.toggle("on", k===m));
+  };
+
+  /* ---------- life grid ---------- */
+  function buildGrid(){
+    const totalMonths = Math.round(state.exp*12);
+    const grid = $("grid"); grid.innerHTML = "";
+    let idx = 0;
+    for(const ch of CHAPTERS){
+      const from = ch.from*12;
+      const to = Math.min(ch.to*12, totalMonths);
+      if(from >= totalMonths) break;
+      const sec = document.createElement("div"); sec.className = "chapter";
+      const nm = document.createElement("div"); nm.className = "chapter-name";
+      nm.innerHTML = ch.name+" <em>"+ch.from+"–"+Math.min(ch.to,state.exp)+"歲</em>";
+      const dots = document.createElement("div"); dots.className = "dots";
+      for(let i=from;i<to;i++){
+        const d = document.createElement("div");
+        d.className = "dot"; d.dataset.m = i;
+        dots.appendChild(d);
+      }
+      sec.appendChild(nm); sec.appendChild(dots); grid.appendChild(sec);
+      idx = to;
+    }
+  }
+  function paintGrid(){
+    const now = new Date();
+    const livedMonths = (now - state.birth) / (1000*60*60*24*30.4375);
+    const cur = Math.floor(livedMonths);
+    document.querySelectorAll(".dot").forEach(d=>{
+      const m = +d.dataset.m;
+      d.className = "dot" + (m<cur ? (cur-m<=12 ? " recent" : " lived") : (m===cur ? " now" : ""));
+    });
+    const pct = Math.min(100, livedMonths/(state.exp*12)*100);
+    $("grid-pct").textContent = pct.toFixed(1)+"% 已使用";
+  }
+
+  /* ---------- ticking ---------- */
+  const YEAR_MS = 365.2425*24*3600*1000;
+  function fmt(n,int,dec){
+    const s = n.toFixed(dec);
+    const [a,b] = s.split(".");
+    return a.padStart(int," ") + '<span class="frac">.'+b+'</span>';
+  }
+  function tick(){
+    const now = Date.now();
+    $("big-num").classList.toggle("compact", mode==="death");
+    if(mode==="age"){
+      const yrs = (now - state.birth.getTime())/YEAR_MS;
+      $("stage-label").textContent = "你的精確年齡";
+      $("big-num").innerHTML = fmt(yrs,2,9);
+      $("big-unit").textContent = "years old";
+      const days = (now - state.birth.getTime())/86400000;
+      $("subrow").innerHTML =
+        sub(Math.floor(days).toLocaleString(),"已活天數") +
+        sub(Math.floor(days/7).toLocaleString(),"週") +
+        sub(Math.floor(days*24).toLocaleString(),"小時");
+    }else if(mode==="death"){
+      const deathT = state.birth.getTime() + state.exp*YEAR_MS;
+      const rem = Math.max(0, deathT - now);
+      $("stage-label").textContent = "預估剩餘時間";
+      const secs = Math.floor(rem/1000);
+      const ms = Math.floor(rem%1000);
+      $("big-num").innerHTML = secs.toLocaleString()+'<span class="frac">.'+String(ms).padStart(3,"0")+'</span>';
+      $("big-unit").textContent = "seconds left";
+      $("subrow").innerHTML =
+        sub((rem/YEAR_MS).toFixed(2),"年") +
+        sub(Math.floor(rem/86400000).toLocaleString(),"剩餘天數") +
+        sub(Math.floor(rem/3600000).toLocaleString(),"小時");
+    }else{
+      const rem = state.dlDate.getTime() - now;
+      $("stage-label").textContent = state.dlName || "期限倒數";
+      if(rem<=0){
+        $("big-num").innerHTML = "0";
+        $("big-unit").textContent = "時間到";
+        $("subrow").innerHTML = "";
+      }else{
+        const d = Math.floor(rem/86400000);
+        const h = Math.floor(rem/3600000)%24;
+        const m = Math.floor(rem/60000)%60;
+        const s = Math.floor(rem/1000)%60;
+        $("big-num").innerHTML = d+'<span class="frac">天</span> '+String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+        $("big-unit").textContent = "remaining";
+        $("subrow").innerHTML =
+          sub((rem/86400000).toFixed(1),"天") +
+          sub(Math.floor(rem/3600000).toLocaleString(),"小時") +
+          sub(Math.floor(rem/60000).toLocaleString(),"分鐘");
+      }
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+  function sub(v,l){ return '<div class="sub"><b>'+v+'</b><span>'+l+'</span></div>'; }
+
+  /* ---------- boot ---------- */
+  function showMain(){
+    $("setup").classList.add("hidden");
+    $("main").classList.remove("hidden");
+    buildGrid();
+    paintGrid();
+    setInterval(paintGrid, 60000);
+    cancelAnimationFrame(rafId);
+    tick();
+  }
+  if(decodeState()) showMain();
+  else $("setup").classList.remove("hidden");
+})();
+</script>
+</body>
+</html>
